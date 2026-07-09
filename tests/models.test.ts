@@ -15,12 +15,24 @@ describe("FAL_MODELS registry", () => {
     expect(FAL_MODELS.some((m) => m.id === DEFAULT_MODEL)).toBe(true);
   });
 
-  it("every body carries the prompt, one image, and is JSON-serializable", () => {
+  it("every body carries the prompt, at most one image, and is JSON-serializable", () => {
     for (const m of FAL_MODELS) {
       const body = m.buildBody("a quiet kitchen table at dawn");
       expect(body.prompt).toBe("a quiet kitchen table at dawn");
-      expect(body.num_images).toBe(1);
+      // Some dialects (FLUX.2, Photon) have no num_images and return one image.
+      if ("num_images" in body) expect(body.num_images).toBe(1);
       expect(() => JSON.stringify(body)).not.toThrow();
+    }
+  });
+
+  it("every model asks for a portrait shape that covers the 1080×1280 image area", () => {
+    for (const m of FAL_MODELS) {
+      const body = m.buildBody("x") as { image_size?: unknown; aspect_ratio?: string };
+      const ok =
+        (typeof body.image_size === "object" && body.image_size !== null) ||
+        body.image_size === "portrait_4_3" ||
+        body.aspect_ratio === "3:4";
+      expect(ok, `${m.id} should request a portrait-ish frame`).toBe(true);
     }
   });
 

@@ -58,7 +58,7 @@ Chrome headless (Remotion le télécharge tout seul au premier rendu).
 5. **Exporter le reel** — rendu Remotion serveur, H.264/AAC, audio intact.
    « Affiche (PNG) » exporte l'image de couverture à la tête de lecture.
 
-## Les six modèles (testés en vrai le 2026-07-09)
+## Les douze modèles (chacun testé en vrai le 2026-07-09)
 
 | Modèle | Usage | ~Temps |
 | --- | --- | --- |
@@ -68,6 +68,16 @@ Chrome headless (Remotion le télécharge tout seul au premier rendu).
 | FLUX 1.1 Ultra | grand format (3:4 recadré) | 12 s |
 | Recraft V3 | illustration, matières | 8 s |
 | Ideogram V3 | graphique, affiches | 21 s |
+| FLUX.2 Dev | la relève, ouverte (32B) | 9 s |
+| FLUX.2 Pro | le nouveau standard | 13 s |
+| FLUX.2 Max | le sommet FLUX | 34 s |
+| Nano Banana 2 (Google) | suit les consignes à la lettre | 17 s |
+| Seedream 5.0 Lite | raisonne avant de peindre, 2K | 30 s |
+| Imagen 4 (Google) | photoréalisme | 8 s |
+| Luma Photon | regard cinéaste, très économique | 17 s |
+
+(Treize en comptant Photon. Qwen Image a été écarté : 5 min de démarrage à
+froid chez Fal — inutilisable en montage.)
 
 En ajouter un = une entrée dans `src/lib/models.ts` (id Fal + libellé +
 constructeur de requête). Les images sont demandées en 1080×1280 — le

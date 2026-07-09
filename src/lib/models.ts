@@ -89,6 +89,83 @@ export const FAL_MODELS: FalModel[] = [
       num_images: 1,
     }),
   },
+  {
+    id: "fal-ai/flux-2-dev",
+    label: "FLUX.2 Dev — la relève",
+    note: "La nouvelle génération FLUX (32B), ouverte.",
+    buildBody: (prompt) => ({
+      prompt,
+      ...exactSize,
+      output_format: "jpeg",
+      enable_safety_checker: false,
+    }),
+  },
+  {
+    id: "fal-ai/flux-2-pro",
+    label: "FLUX.2 Pro — le nouveau standard",
+    note: "Fidélité de scène et typographie nettement meilleures.",
+    buildBody: (prompt) => ({
+      prompt,
+      ...exactSize,
+      output_format: "jpeg",
+      safety_tolerance: 5,
+      enable_safety_checker: false,
+    }),
+  },
+  {
+    id: "fal-ai/flux-2-max",
+    label: "FLUX.2 Max — le sommet",
+    note: "Le plus fort de la famille FLUX; plus lent, plus cher.",
+    buildBody: (prompt) => ({
+      prompt,
+      ...exactSize,
+      output_format: "jpeg",
+      safety_tolerance: 5,
+      enable_safety_checker: false,
+    }),
+  },
+  {
+    id: "fal-ai/nano-banana-2",
+    label: "Nano Banana 2 (Google) — l'obéissant",
+    note: "Suit les consignes à la lettre, très naturel.",
+    buildBody: (prompt) => ({
+      prompt,
+      aspect_ratio: "3:4",
+      resolution: "1K",
+      num_images: 1,
+      output_format: "jpeg",
+    }),
+  },
+  {
+    id: "fal-ai/bytedance/seedream/v5/lite/text-to-image",
+    label: "Seedream 5.0 Lite — le raisonneur",
+    note: "Réfléchit avant de peindre; détail 2K, 3,5 ¢.",
+    buildBody: (prompt) => ({
+      prompt,
+      image_size: "portrait_4_3",
+      num_images: 1,
+    }),
+  },
+  {
+    id: "fal-ai/imagen4",
+    label: "Imagen 4 (Google) — photoréaliste",
+    note: "Lumière et matières photographiques.",
+    buildBody: (prompt) => ({
+      prompt,
+      aspect_ratio: "3:4",
+      num_images: 1,
+      output_format: "jpeg",
+    }),
+  },
+  {
+    id: "fal-ai/luma-photon",
+    label: "Luma Photon — le cinéaste",
+    note: "Regard cinématographique, très économique.",
+    buildBody: (prompt) => ({
+      prompt,
+      aspect_ratio: "3:4",
+    }),
+  },
 ];
 
 export const DEFAULT_MODEL = "fal-ai/flux/dev";
