@@ -467,6 +467,16 @@ export const Editor: React.FC<{ id: string; health: Health | null; serverUp: boo
           >
             Répartir également
           </button>
+          <label className="tl-style" title="Le style partagé — ajouté à la fin de chaque prompt d'image">
+            <span>Style</span>
+            <input
+              type="text"
+              value={project.style}
+              onChange={(e) => update((p) => ({ ...p, style: e.target.value }))}
+              placeholder="l'esthétique de la bobine — ex. woodcut engraving, morning fog, muted amber, no people, no text"
+              spellCheck={false}
+            />
+          </label>
           <span className="spacer" />
           <span>Zoom</span>
           <input
