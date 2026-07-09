@@ -37,7 +37,9 @@ const project = (over: Partial<Project> = {}): Project => ({
     { stanzaIndex: 1, start: 9, end: 17 },
   ],
   clips: [clip({ id: "c1" }), clip({ id: "c2" })],
-  controls: { ...DEFAULT_CONTROLS },
+  // Cards off in the base fixture so the granular tests keep the plain
+  // audio-length reel; the cards get their own suite below.
+  controls: { ...DEFAULT_CONTROLS, showTitleCard: false, showClosingCard: false },
   style: "",
   ...over,
 });
@@ -142,6 +144,75 @@ describe("buildRenderProps", () => {
   it("keeps transition frames at least 1", () => {
     const p = project({ clips: [clip({ transitionSeconds: 0 }), clip()] });
     expect(buildRenderProps(p, base).clips[0].transitionF).toBeGreaterThanOrEqual(1);
+  });
+});
+
+describe("title & closing cards", () => {
+  const base = "http://localhost:7788/projects/test-bobine";
+  const cardControls = { ...DEFAULT_CONTROLS, showTitleCard: true, showClosingCard: true };
+
+  it("title card prepends 3 s before the body", () => {
+    const p = project({ controls: { ...cardControls, showClosingCard: false } });
+    const props = buildRenderProps(p, base);
+    expect(props.titleF).toBe(3 * FPS);
+    expect(props.durationInFrames).toBe(3 * FPS + 20 * FPS);
+    expect(props.title).toBe("Test");
+  });
+
+  it("no title card when the title is blank, even if enabled", () => {
+    const p = project({ title: "   ", controls: cardControls });
+    expect(buildRenderProps(p, base).titleF).toBe(0);
+  });
+
+  it("body-relative cues and clips are NOT shifted by the title card", () => {
+    const with_ = buildRenderProps(project({ controls: { ...cardControls, showClosingCard: false } }), base);
+    const without = buildRenderProps(project(), base);
+    expect(with_.cues).toEqual(without.cues);
+    expect(with_.clips).toEqual(without.clips);
+  });
+
+  it("closing card starts a beat after the last spoken moment", () => {
+    // speechEnd 18 s beats the last cue (17 s): 540 + 20 lead = 560.
+    const p = project({ controls: { ...cardControls, showTitleCard: false } });
+    const props = buildRenderProps(p, base);
+    expect(props.closingStartF).toBe(560);
+    expect(props.showClosingCard).toBe(true);
+  });
+
+  it("extends the reel when the outro is too short to read the poem", () => {
+    // Audio ends at 20 s (600f) but the card starts at 560 — it needs 150f.
+    const p = project({ controls: { ...cardControls, showTitleCard: false } });
+    expect(buildRenderProps(p, base).durationInFrames).toBe(560 + 150);
+  });
+
+  it("does not extend when the outro already gives the card enough air", () => {
+    const p = project({
+      audio: { file: "vo.mp3", duration: 30, speechEnd: 18, aligned: true },
+      controls: { ...cardControls, showTitleCard: false },
+    });
+    expect(buildRenderProps(p, base).durationInFrames).toBe(30 * FPS);
+  });
+
+  it("both cards compose: total = title + extended body", () => {
+    const props = buildRenderProps(project({ controls: cardControls }), base);
+    expect(props.durationInFrames).toBe(90 + 710);
+  });
+
+  it("the last clip stretches under the closing card", () => {
+    const props = buildRenderProps(project({ controls: { ...cardControls, showTitleCard: false } }), base);
+    expect(props.clips[props.clips.length - 1].to).toBe(710);
+  });
+
+  it("cards off keeps the reel exactly audio-length", () => {
+    const props = buildRenderProps(project(), base);
+    expect(props.titleF).toBe(0);
+    expect(props.closingStartF).toBeGreaterThan(props.durationInFrames - props.titleF);
+    expect(props.durationInFrames).toBe(20 * FPS);
+  });
+
+  it("ships the whole poem for the closing card", () => {
+    const props = buildRenderProps(project({ controls: cardControls }), base);
+    expect(props.poem).toEqual([["le matin"], ["la table"]]);
   });
 });
 

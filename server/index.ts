@@ -31,6 +31,7 @@ import { FAL_MODELS, DEFAULT_MODEL, getModel, fullPrompt } from "../src/lib/mode
 import { slugify } from "../src/lib/format";
 import {
   DEFAULT_CONTROLS,
+  normalizeControls,
   type ImageClip,
   type Project,
   type TextCue,
@@ -88,7 +89,12 @@ const readBody = (req: IncomingMessage): Promise<Record<string, unknown>> =>
 const SAFE_ID = /^[a-z0-9-]+$/;
 const pdir = (id: string, ...rest: string[]) => join(PROJECTS, id, ...rest);
 const projectExists = (id: string) => SAFE_ID.test(id) && existsSync(pdir(id, "project.json"));
-const readProject = (id: string): Project => JSON.parse(readFileSync(pdir(id, "project.json"), "utf8"));
+const readProject = (id: string): Project => {
+  const p = JSON.parse(readFileSync(pdir(id, "project.json"), "utf8")) as Project;
+  // Additive migration: projects written before newer control fields existed.
+  p.controls = normalizeControls(p.controls);
+  return p;
+};
 const writeProject = (p: Project) => writeFileSync(pdir(p.id, "project.json"), JSON.stringify(p, null, 2) + "\n");
 const assetBase = (id: string) => `http://localhost:${PORT}/projects/${id}`;
 const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 6);

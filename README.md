@@ -47,7 +47,13 @@ Chrome headless (Remotion le télécharge tout seul au premier rendu).
    une vignette pour choisir celle qui joue, régénère sans rien perdre.
    « ✳ Proposer des prompts » (onglet Bobine) demande à Claude une ébauche par
    strophe + un style partagé — ne remplit que les champs vides.
-4. **Exporter le reel** — rendu Remotion serveur, H.264/AAC, audio intact.
+4. **Cartes** (onglet Bobine, activées par défaut) : une **carte-titre** — 3 s
+   de noir avec le titre, avant que l'audio commence — et une **carte finale**
+   avec le poème entier + crédit, qui prend le relais après la narration,
+   pendant l'outro musical. Si l'outro est trop court pour lire le poème, le
+   reel s'étire de quelques secondes (silence tenu). La timeline reste sur
+   l'horloge de l'audio; le décalage de la carte-titre est géré tout seul.
+5. **Exporter le reel** — rendu Remotion serveur, H.264/AAC, audio intact.
    « Affiche (PNG) » exporte l'image de couverture à la tête de lecture.
 
 ## Les six modèles (testés en vrai le 2026-07-09)
@@ -84,7 +90,7 @@ Le Player et le rendu consomment **les mêmes props** dérivées du même
 `buildRenderProps` : ce que tu vois est ce qui s'exporte.
 
 ```bash
-npm test            # 65 tests (alignement, timeline, modèles, motion…)
+npm test            # 75 tests (alignement, timeline, modèles, motion…)
 npm run build       # tsc --noEmit + vite build (doit passer avant de pousser)
 npm run web         # app compilée servie par le serveur seul (sans Vite)
 ```

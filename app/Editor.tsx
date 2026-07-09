@@ -39,6 +39,9 @@ export const Editor: React.FC<{ id: string; health: Health | null; onClose: () =
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const projectRef = useRef<Project | null>(null);
   projectRef.current = project;
+  // The title card shifts the whole body: player frames are total-relative,
+  // the timeline (and `playhead`) are body-relative.
+  const titleFRef = useRef(0);
 
   // ---------- load ----------
   useEffect(() => {
@@ -133,7 +136,10 @@ export const Editor: React.FC<{ id: string; health: Health | null; onClose: () =
   useEffect(() => {
     const player = playerRef.current;
     if (!player) return;
-    const onFrame: CallbackListener<"frameupdate"> = (e) => setPlayhead(e.detail.frame / FPS);
+    const onFrame: CallbackListener<"frameupdate"> = (e) => {
+      const dur = projectRef.current?.audio.duration ?? Infinity;
+      setPlayhead(Math.min(dur, Math.max(0, (e.detail.frame - titleFRef.current) / FPS)));
+    };
     const onPlay = () => setPlaying(true);
     const onPause = () => setPlaying(false);
     player.addEventListener("frameupdate", onFrame);
@@ -147,7 +153,7 @@ export const Editor: React.FC<{ id: string; health: Health | null; onClose: () =
   }, [project === null]);
 
   const seek = useCallback((t: number) => {
-    playerRef.current?.seekTo(Math.round(t * FPS));
+    playerRef.current?.seekTo(Math.round(t * FPS) + titleFRef.current);
     setPlayhead(t);
   }, []);
 
@@ -270,7 +276,7 @@ export const Editor: React.FC<{ id: string; health: Health | null; onClose: () =
       setRendering({ kind, startedAt: Date.now() });
       try {
         await flushSave();
-        const res = kind === "reel" ? await api.render(p.id) : await api.still(p.id, toFrames(playhead));
+        const res = kind === "reel" ? await api.render(p.id) : await api.still(p.id, toFrames(playhead) + titleFRef.current);
         if (!res.ok || !res.path) throw new Error(res.error || "le rendu a échoué");
         setToast({ kind: "ok", msg: `${kind === "reel" ? "Reel exporté" : "Affiche exportée"} ✓ — ${res.path} (révélé dans le Finder)` });
       } catch (e) {
@@ -344,6 +350,7 @@ export const Editor: React.FC<{ id: string; health: Health | null; onClose: () =
 
   // ---------- derived ----------
   const renderProps = useMemo(() => (project ? buildRenderProps(project, projectAssetBase(project.id)) : null), [project]);
+  titleFRef.current = renderProps?.titleF ?? 0;
 
   if (!project || !renderProps) {
     return (

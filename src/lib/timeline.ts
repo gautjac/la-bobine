@@ -11,6 +11,10 @@ export const MIN_CLIP_F = 15; // half a second — a clip can't collapse below t
 export const HEAD_FADE_F = 14; // fade in from black
 export const TAIL_FADE_F = 24; // fade out to black over the audio's last beat
 export const CUE_FADE_F = 12; // stanza cross-fade
+export const TITLE_CARD_SEC = 3; // black title card before the audio begins
+export const CARD_FADE_F = 22; // title/closing card cross-fades
+export const CLOSING_LEAD_F = 20; // beat after the last spoken word before the poem card
+export const MIN_CLOSING_HOLD_F = 150; // the full poem needs at least 5 s of air
 
 export const toFrames = (seconds: number): number => Math.round(seconds * FPS);
 export const toSeconds = (frames: number): number => frames / FPS;
@@ -35,7 +39,18 @@ export type ClipProps = {
 // Record<string, unknown> component constraint.
 export type BobineProps = {
   audioUrl: string;
+  /** TOTAL length: title card + body (audio, possibly extended for the closing card). */
   durationInFrames: number;
+  title: string;
+  /** The whole poem, for the closing card. */
+  poem: string[][];
+  /** Title-card length in frames — 0 when disabled. The body (audio, clips,
+   *  cues — all body-relative) starts at this frame. */
+  titleF: number;
+  /** Body-relative frame where the closing card takes over; Infinity-like
+   *  (>= body end) when disabled. */
+  closingStartF: number;
+  showClosingCard: boolean;
   bandPosition: "bottom" | "top";
   bandRatio: number;
   font: string;
@@ -73,17 +88,36 @@ export function projectDurationF(project: Pick<Project, "audio">): number {
  *  URL of projects/<id>/ on the studio server (works in the Player AND in the
  *  headless render browser, which both fetch from the running server). */
 export function buildRenderProps(project: Project, assetBase: string): BobineProps {
-  const durationInFrames = projectDurationF(project);
+  const audioF = projectDurationF(project);
+  const c = project.controls;
+
+  // Title card: 3 s of black+title BEFORE the audio, so an immediate first
+  // stanza never collides with it.
+  const titleF = c.showTitleCard && project.title.trim() ? toFrames(TITLE_CARD_SEC) : 0;
+
+  // Closing card: takes over once the narration is done (last cue or aligned
+  // speech end, whichever is later). If the music outro is too short to read
+  // the whole poem, the body extends past the audio into held silence.
+  const lastCueEndF = project.cues.reduce((m, cue) => Math.max(m, toFrames(cue.end)), 0);
+  let closingStartF = audioF + 1;
+  let bodyF = audioF;
+  if (c.showClosingCard) {
+    const speechEndF = Math.max(lastCueEndF, toFrames(project.audio.speechEnd));
+    closingStartF = Math.max(0, Math.min(speechEndF + CLOSING_LEAD_F, audioF - 1));
+    bodyF = Math.max(audioF, closingStartF + MIN_CLOSING_HOLD_F);
+  }
+  const durationInFrames = titleF + bodyF;
+
   const cues = [...project.cues]
     .sort((a, b) => a.start - b.start)
     .map((cue) => ({
       text: (project.stanzas[cue.stanzaIndex] ?? []).join("\n"),
-      from: Math.max(0, Math.min(toFrames(cue.start), durationInFrames - 1)),
-      to: Math.max(1, Math.min(toFrames(cue.end), durationInFrames)),
+      from: Math.max(0, Math.min(toFrames(cue.start), bodyF - 1)),
+      to: Math.max(1, Math.min(toFrames(cue.end), bodyF)),
     }))
-    .filter((c) => c.text.length > 0 && c.to > c.from);
+    .filter((cc) => cc.text.length > 0 && cc.to > cc.from);
 
-  const bnd = clipBoundaries(project.clips.map((c) => c.seconds), durationInFrames);
+  const bnd = clipBoundaries(project.clips.map((cl) => cl.seconds), bodyF);
   const clips = project.clips.map((clip, i) => {
     const gen = activeGeneration(clip);
     return {
@@ -99,14 +133,19 @@ export function buildRenderProps(project: Project, assetBase: string): BobinePro
   return {
     audioUrl: `${assetBase}/${project.audio.file}`,
     durationInFrames,
-    bandPosition: project.controls.bandPosition,
-    bandRatio: project.controls.bandRatio,
-    font: project.controls.font,
-    fontSize: project.controls.fontSize,
-    textColor: project.controls.textColor,
-    textAlign: project.controls.textAlign,
-    showText: project.controls.showText,
-    credit: project.controls.credit,
+    title: project.title,
+    poem: project.stanzas,
+    titleF,
+    closingStartF,
+    showClosingCard: c.showClosingCard,
+    bandPosition: c.bandPosition,
+    bandRatio: c.bandRatio,
+    font: c.font,
+    fontSize: c.fontSize,
+    textColor: c.textColor,
+    textAlign: c.textAlign,
+    showText: c.showText,
+    credit: c.credit,
     cues,
     clips,
   };

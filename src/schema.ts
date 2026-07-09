@@ -8,6 +8,11 @@ import type { BobineProps } from "./lib/timeline";
 export const bobineSchema = z.object({
   audioUrl: z.string(),
   durationInFrames: z.number().int().min(1),
+  title: z.string(),
+  poem: z.array(z.array(z.string())),
+  titleF: z.number().int().min(0),
+  closingStartF: z.number().int().min(0),
+  showClosingCard: z.boolean(),
   bandPosition: z.enum(["bottom", "top"]),
   bandRatio: z.number().min(0.15).max(0.6),
   font: z.string(),
@@ -37,7 +42,15 @@ export const bobineSchema = z.object({
 
 export const DEFAULT_PROPS: BobineProps = {
   audioUrl: "",
-  durationInFrames: 300,
+  durationInFrames: 480,
+  title: "Essai du matin",
+  poem: [
+    ["Le matin plie sa brume", "comme un drap qu'on range"],
+    ["et la table attend,", "patiente, le premier café"],
+  ],
+  titleF: 90,
+  closingStartF: 310,
+  showClosingCard: true,
   bandPosition: "bottom",
   bandRatio: 1 / 3,
   font: "Cormorant Garamond",
@@ -52,6 +65,6 @@ export const DEFAULT_PROPS: BobineProps = {
   ],
   clips: [
     { src: null, from: 0, to: 150, transition: "cut", transitionF: 21, motion: "pushIn" },
-    { src: null, from: 150, to: 300, transition: "crossfade", transitionF: 21, motion: "pullOut" },
+    { src: null, from: 150, to: 310, transition: "crossfade", transitionF: 21, motion: "pullOut" },
   ],
 };

@@ -317,6 +317,29 @@ const ProjectPanel: React.FC<Props> = (p) => {
         <input type="text" value={c.credit} onChange={(e) => setControls({ credit: e.target.value })} />
       </label>
 
+      <div className="row" style={{ marginBottom: 12 }}>
+        <label className="check">
+          <input
+            type="checkbox"
+            checked={c.showTitleCard}
+            onChange={(e) => setControls({ showTitleCard: e.target.checked })}
+          />
+          <span>
+            Carte-titre <em>(3 s de noir avec le titre, avant l'audio)</em>
+          </span>
+        </label>
+        <label className="check">
+          <input
+            type="checkbox"
+            checked={c.showClosingCard}
+            onChange={(e) => setControls({ showClosingCard: e.target.checked })}
+          />
+          <span>
+            Carte finale <em>(le poème entier, sur la fin de la musique)</em>
+          </span>
+        </label>
+      </div>
+
       <hr className="divider" />
 
       <label className="field">

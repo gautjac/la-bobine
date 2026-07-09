@@ -56,6 +56,10 @@ export interface Controls {
   textAlign: TextAlign;
   showText: boolean;
   credit: string;
+  /** 3 s of black with the title before the audio begins. */
+  showTitleCard: boolean;
+  /** Full-poem card over the music outro at the end. */
+  showClosingCard: boolean;
 }
 
 export interface Project {
@@ -82,7 +86,15 @@ export const DEFAULT_CONTROLS: Controls = {
   textAlign: "center",
   showText: true,
   credit: "© Jac Gautreau",
+  showTitleCard: true,
+  showClosingCard: true,
 };
+
+/** Older project.json files predate newer control fields — always merge over
+ *  the defaults when reading from disk (additive migration, never destructive). */
+export function normalizeControls(partial: Partial<Controls> | undefined): Controls {
+  return { ...DEFAULT_CONTROLS, ...partial };
+}
 
 export const TRANSITION_LABELS: Record<Transition, string> = {
   cut: "Coupe franche",

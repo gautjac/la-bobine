@@ -106,6 +106,17 @@ input[type="color"] {
 }
 
 .hint { color: var(--dim); font-size: 12.5px; }
+
+label.check {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  font-size: 13px;
+  cursor: pointer;
+  color: var(--text);
+}
+label.check input { accent-color: var(--accent); margin-top: 2px; }
+label.check em { color: var(--dim); font-style: normal; font-size: 12px; display: block; }
 .error { color: var(--danger); font-size: 13px; }
 
 .tag {
