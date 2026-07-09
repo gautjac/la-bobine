@@ -151,6 +151,31 @@ export function buildRenderProps(project: Project, assetBase: string): BobinePro
   };
 }
 
+/** Move one item to a new index (drag-to-reorder on the image lane). */
+export function reorder<T>(arr: T[], from: number, to: number): T[] {
+  if (from === to || from < 0 || from >= arr.length) return arr;
+  const target = Math.max(0, Math.min(arr.length - 1, to));
+  const out = [...arr];
+  const [item] = out.splice(from, 1);
+  out.splice(target, 0, item);
+  return out;
+}
+
+/** Where a dragged block lands: how many OTHER slots' midpoints sit left of
+ *  the dragged block's (moving) centre — i.e. its insertion index. */
+export function dropTargetIndex(
+  bounds: { start: number; end: number }[],
+  from: number,
+  center: number,
+): number {
+  let target = 0;
+  bounds.forEach((b, i) => {
+    if (i === from) return;
+    if ((b.start + b.end) / 2 < center) target++;
+  });
+  return Math.max(0, Math.min(bounds.length - 1, target));
+}
+
 /** Even redistribution — the « Répartir également » button. */
 export function distributeEvenly(count: number, audioDuration: number): number[] {
   if (count <= 0) return [];

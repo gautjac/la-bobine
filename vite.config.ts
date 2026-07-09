@@ -8,6 +8,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5788,
+    strictPort: true, // a second instance must fail loudly, not drift to 5789
     proxy: {
       "/api": "http://localhost:7788",
       "/projects": "http://localhost:7788",

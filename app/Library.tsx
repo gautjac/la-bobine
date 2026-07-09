@@ -1,10 +1,15 @@
 import React, { useEffect, useRef, useState } from "react";
 import { api, fileToBase64, SERVER_BASE, type Health, type ProjectSummary } from "./api";
 import { fmtTime } from "../src/lib/format";
+import { OfflineBanner } from "./App";
 
 const dateFmt = new Intl.DateTimeFormat("fr-CA", { day: "numeric", month: "long" });
 
-export const Library: React.FC<{ health: Health | null; onOpen: (id: string) => void }> = ({ health, onOpen }) => {
+export const Library: React.FC<{ health: Health | null; serverUp: boolean; onOpen: (id: string) => void }> = ({
+  health,
+  serverUp,
+  onOpen,
+}) => {
   const [projects, setProjects] = useState<ProjectSummary[] | null>(null);
   const [title, setTitle] = useState("");
   const [text, setText] = useState("");
@@ -43,6 +48,7 @@ export const Library: React.FC<{ health: Health | null; onOpen: (id: string) => 
 
   return (
     <div className="library">
+      {!serverUp ? <OfflineBanner /> : null}
       <div className="masthead">
         <h1>
           La Bobine<span className="reel-dot">.</span>

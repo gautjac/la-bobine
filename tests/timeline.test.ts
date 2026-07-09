@@ -9,6 +9,8 @@ import {
   distributeEvenly,
   clipStartSeconds,
   projectDurationF,
+  reorder,
+  dropTargetIndex,
 } from "../src/lib/timeline";
 import { DEFAULT_CONTROLS, type ImageClip, type Project } from "../src/lib/types";
 
@@ -229,6 +231,63 @@ describe("distributeEvenly", () => {
 
   it("handles zero clips", () => {
     expect(distributeEvenly(0, 30)).toEqual([]);
+  });
+});
+
+describe("reorder", () => {
+  it("moves an item forward", () => {
+    expect(reorder(["a", "b", "c", "d"], 0, 2)).toEqual(["b", "c", "a", "d"]);
+  });
+
+  it("moves an item backward", () => {
+    expect(reorder(["a", "b", "c", "d"], 3, 1)).toEqual(["a", "d", "b", "c"]);
+  });
+
+  it("is identity for same index or out-of-range from", () => {
+    const arr = ["a", "b"];
+    expect(reorder(arr, 1, 1)).toBe(arr);
+    expect(reorder(arr, 5, 0)).toBe(arr);
+    expect(reorder(arr, -1, 0)).toBe(arr);
+  });
+
+  it("clamps the target into range", () => {
+    expect(reorder(["a", "b", "c"], 0, 99)).toEqual(["b", "c", "a"]);
+    expect(reorder(["a", "b", "c"], 2, -5)).toEqual(["c", "a", "b"]);
+  });
+
+  it("never mutates the input", () => {
+    const arr = ["a", "b", "c"];
+    reorder(arr, 0, 2);
+    expect(arr).toEqual(["a", "b", "c"]);
+  });
+});
+
+describe("dropTargetIndex", () => {
+  // Three slots: [0,100) [100,200) [200,400)
+  const bounds = [
+    { start: 0, end: 100 },
+    { start: 100, end: 200 },
+    { start: 200, end: 400 },
+  ];
+
+  it("stays home when the centre hasn't crossed a neighbour's midpoint", () => {
+    expect(dropTargetIndex(bounds, 0, 60)).toBe(0);
+    expect(dropTargetIndex(bounds, 1, 160)).toBe(1);
+  });
+
+  it("moves right once past the next slot's midpoint", () => {
+    expect(dropTargetIndex(bounds, 0, 160)).toBe(1);
+    expect(dropTargetIndex(bounds, 0, 350)).toBe(2);
+  });
+
+  it("moves left once past the previous slot's midpoint", () => {
+    expect(dropTargetIndex(bounds, 2, 140)).toBe(1);
+    expect(dropTargetIndex(bounds, 2, 20)).toBe(0);
+  });
+
+  it("clamps to the lane", () => {
+    expect(dropTargetIndex(bounds, 1, -500)).toBe(0);
+    expect(dropTargetIndex(bounds, 1, 5000)).toBe(2);
   });
 });
 

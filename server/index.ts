@@ -563,6 +563,15 @@ const server = createServer(async (req, res) => {
 server.requestTimeout = 0;
 server.headersTimeout = 60_000;
 
+server.on("error", (e: NodeJS.ErrnoException) => {
+  if (e.code === "EADDRINUSE") {
+    console.error(`✗ Le port ${PORT} est déjà pris — La Bobine tourne déjà ailleurs ?`);
+    console.error("  Ferme l'autre instance (ou l'autre fenêtre Terminal), puis relance.");
+    process.exit(1);
+  }
+  throw e;
+});
+
 server.listen(PORT, () => {
   console.log(`La Bobine — serveur studio → http://localhost:${PORT}`);
   console.log(

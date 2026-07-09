@@ -38,8 +38,10 @@ Chrome headless (Remotion le télécharge tout seul au premier rendu).
    entièrement ajustable.
 2. **Timeline** (trois pistes) :
    - **Images** — un clip par strophe au départ. Poignée droite = durée; la
-     dernière image s'étire jusqu'à la fin de l'audio. Flèches ←/→ dans
-     l'inspecteur pour réordonner; « + Image », « Répartir également ».
+     dernière image s'étire jusqu'à la fin de l'audio. **Glisse un bloc** pour
+     changer l'ordre (repère ambre = point d'insertion; prompts et galeries
+     suivent le clip); flèches ←/→ dans l'inspecteur aussi; « + Image »,
+     « Répartir également ».
    - **Texte** — les repères de strophes; glisse le bloc, rogne les bords.
    - **Audio** — la forme d'onde; clique la règle pour naviguer. Espace = jouer.
 3. **Inspecteur** (clic sur un clip) : prompt, **menu des modèles Fal**,
@@ -96,6 +98,11 @@ npm run web         # app compilée servie par le serveur seul (sans Vite)
 ```
 
 ## Notes
+
+- **Une seule instance à la fois.** Le studio veut les ports 5788 + 7788; une
+  deuxième instance s'arrête avec un message clair au lieu de dériver. Si
+  l'app affiche la bannière « serveur ne répond plus », relance « La
+  Bobine.command » — la page se reconnecte et resauvegarde toute seule.
 
 - Les avertissements console `EncodingError … cannot be decoded` pendant le
   scrubbing sont des `decode()` interrompus par les remontages de séquences —

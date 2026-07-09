@@ -1,13 +1,14 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Player, type PlayerRef, type CallbackListener } from "@remotion/player";
 import { Bobine } from "../src/Bobine";
-import { buildRenderProps, distributeEvenly, FPS, toFrames, WIDTH, HEIGHT } from "../src/lib/timeline";
+import { buildRenderProps, distributeEvenly, reorder, FPS, toFrames, WIDTH, HEIGHT } from "../src/lib/timeline";
 import type { Project } from "../src/lib/types";
 import { DEFAULT_MODEL } from "../src/lib/models";
 import { fmtTime, uid } from "../src/lib/format";
 import { api, projectAssetBase, type Health } from "./api";
 import { Timeline, type Selection } from "./Timeline";
 import { Inspector } from "./Inspector";
+import { OfflineBanner } from "./App";
 
 type SaveState = "clean" | "dirty" | "saving" | "saved";
 type Toast = { kind: "ok" | "err"; msg: string } | null;
@@ -20,7 +21,12 @@ const stageFor = (elapsed: number, kind: "reel" | "affiche") => {
   return "Toujours en cours — une minute de reel prend quelques minutes…";
 };
 
-export const Editor: React.FC<{ id: string; health: Health | null; onClose: () => void }> = ({ id, health, onClose }) => {
+export const Editor: React.FC<{ id: string; health: Health | null; serverUp: boolean; onClose: () => void }> = ({
+  id,
+  health,
+  serverUp,
+  onClose,
+}) => {
   const [project, setProject] = useState<Project | null>(null);
   const [selection, setSelection] = useState<Selection>({ kind: "project" });
   const [zoom, setZoom] = useState(60);
@@ -122,6 +128,12 @@ export const Editor: React.FC<{ id: string; health: Health | null; onClose: () =
     await api.save(p);
     setSaveState("saved");
   }, []);
+
+  // The server came back after an outage: push whatever failed to save.
+  useEffect(() => {
+    if (serverUp && saveState === "dirty") scheduleSave();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [serverUp]);
 
   useEffect(() => () => {
     // Leaving the editor: flush any pending edit.
@@ -364,6 +376,7 @@ export const Editor: React.FC<{ id: string; health: Health | null; onClose: () =
 
   return (
     <div className="editor">
+      {!serverUp ? <OfflineBanner /> : null}
       <div className="topbar">
         <button className="btn small ghost" onClick={onClose}>
           ‹ Bibliothèque
@@ -395,6 +408,10 @@ export const Editor: React.FC<{ id: string; health: Health | null; onClose: () =
               controls={false}
               clickToPlay
               acknowledgeRemotionLicense
+              // The title card delays <Audio> mounting past the play gesture;
+              // shared tags are pre-unlocked during the click so the browser's
+              // autoplay policy can't mute the reel.
+              numberOfSharedAudioTags={4}
             />
           </div>
           <div className="transport">
@@ -475,6 +492,7 @@ export const Editor: React.FC<{ id: string; health: Health | null; onClose: () =
           onClipSeconds={(clipId, seconds) =>
             update((p) => ({ ...p, clips: p.clips.map((c) => (c.id === clipId ? { ...c, seconds } : c)) }))
           }
+          onReorderClip={(from, to) => update((p) => ({ ...p, clips: reorder(p.clips, from, to) }))}
         />
       </div>
 

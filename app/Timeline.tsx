@@ -2,10 +2,10 @@
 // (drag to move, edges to trim), and the audio waveform (click to scrub).
 // All frame math comes from src/lib/timeline so the lanes match the render.
 
-import React, { useEffect, useMemo, useRef } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import type { Project } from "../src/lib/types";
 import { activeGeneration } from "../src/lib/types";
-import { clipStartSeconds } from "../src/lib/timeline";
+import { clipStartSeconds, dropTargetIndex } from "../src/lib/timeline";
 import { fmtTime } from "../src/lib/format";
 import { projectAssetBase } from "./api";
 
@@ -23,6 +23,7 @@ interface Props {
   onSelect: (sel: Selection) => void;
   onCueChange: (index: number, start: number, end: number) => void;
   onClipSeconds: (clipId: string, seconds: number) => void;
+  onReorderClip: (from: number, to: number) => void;
 }
 
 /** Generic horizontal drag: calls cb with the delta in seconds since drag start. */
@@ -83,6 +84,7 @@ export const Timeline: React.FC<Props> = ({
   onSelect,
   onCueChange,
   onClipSeconds,
+  onReorderClip,
 }) => {
   const duration = project.audio.duration;
   const width = duration * zoom;
@@ -93,6 +95,43 @@ export const Timeline: React.FC<Props> = ({
     () => clipStartSeconds(project.clips.map((c) => c.seconds), duration),
     [project.clips, duration],
   );
+
+  // --- drag an image block to reorder it ---
+  const [clipDrag, setClipDrag] = useState<{ from: number; dx: number; target: number } | null>(null);
+  const clipBoundsPx = useMemo(
+    () =>
+      project.clips.map((_, k) => ({
+        start: x(starts[k]),
+        end: x(k === project.clips.length - 1 ? duration : starts[k + 1]),
+      })),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [starts, duration, zoom, project.clips.length],
+  );
+
+  const startClipDrag = (e: React.PointerEvent, i: number) => {
+    onSelect({ kind: "clip", id: project.clips[i].id });
+    e.preventDefault();
+    const startX = e.clientX;
+    const bounds = clipBoundsPx;
+    const center0 = (bounds[i].start + bounds[i].end) / 2;
+    let started = false; // 6 px of intent before a click becomes a drag
+    const move = (ev: PointerEvent) => {
+      const dx = ev.clientX - startX;
+      if (!started && Math.abs(dx) > 6) started = true;
+      if (started) setClipDrag({ from: i, dx, target: dropTargetIndex(bounds, i, center0 + dx) });
+    };
+    const up = (ev: PointerEvent) => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      setClipDrag(null);
+      if (started) {
+        const target = dropTargetIndex(bounds, i, center0 + (ev.clientX - startX));
+        if (target !== i) onReorderClip(i, target);
+      }
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+  };
 
   const tickStep = zoom >= 90 ? 1 : zoom >= 45 ? 2 : zoom >= 18 ? 5 : 10;
   const ticks = useMemo(() => {
@@ -146,12 +185,17 @@ export const Timeline: React.FC<Props> = ({
             const end = isLast ? duration : starts[i + 1];
             const gen = activeGeneration(clip);
             const selected = selection.kind === "clip" && selection.id === clip.id;
+            const dragging = clipDrag?.from === i;
             return (
               <div
                 key={clip.id}
-                className={`tl-block clip ${gen ? "" : "empty"} ${selected ? "selected" : ""}`}
-                style={{ left: x(start), width: Math.max(10, (end - start) * zoom) }}
-                onPointerDown={() => onSelect({ kind: "clip", id: clip.id })}
+                className={`tl-block clip ${gen ? "" : "empty"} ${selected ? "selected" : ""} ${dragging ? "dragging" : ""}`}
+                style={{
+                  left: x(start),
+                  width: Math.max(10, (end - start) * zoom),
+                  transform: dragging ? `translateX(${clipDrag.dx}px)` : undefined,
+                }}
+                onPointerDown={(e) => startClipDrag(e, i)}
                 title={clip.prompt || `Image ${i + 1}`}
               >
                 {gen ? (
@@ -175,6 +219,17 @@ export const Timeline: React.FC<Props> = ({
               </div>
             );
           })}
+          {clipDrag && clipDrag.target !== clipDrag.from ? (
+            <div
+              className="tl-drop"
+              style={{
+                left:
+                  clipDrag.target > clipDrag.from
+                    ? clipBoundsPx[clipDrag.target].end
+                    : clipBoundsPx[clipDrag.target].start,
+              }}
+            />
+          ) : null}
         </div>
 
         {/* stanza cues */}
