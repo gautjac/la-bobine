@@ -1,0 +1,11 @@
+node_modules
+dist
+app/dist
+.netlify
+.env
+*.local
+.DS_Store
+
+# User media — poems, narrations, generated images, renders live on this Mac only.
+projects/
+out/
